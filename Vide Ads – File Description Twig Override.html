@@ -22,31 +22,40 @@
   <pre><code>/themes/custom/YOUR_THEME/templates/</code></pre>
   <p>Replace <code>YOUR_THEME</code> with the actual name of your active theme.</p>
 
-  <h3>2. Paste the Following Twig Code</h3>
+  <h3>2. Paste the Following Twig Code (with Node Type + View Mode Condition)</h3>
+
   <pre><code>{% raw %}
 {#
  * field--node--field-video-upload.html.twig
- * Custom template to show video and file description
+ * Only render file description for node type 'video_ads' and view mode 'full'
 #}
 
 {% for item in items %}
   {% set media = item['#media'] %}
-  {% if media.field_media_video_file is defined %}
-    {% set file = media.field_media_video_file.entity %}
-    {% set description = file.description.value %}
-  {% endif %}
-
-  &lt;div class="video-ad-wrapper"&gt;
-    &lt;div class="video-player"&gt;
-      {{ item.content }}
-    &lt;/div&gt;
-
-    {% if description %}
-      &lt;div class="video-description"&gt;
-        {{ description }}
-      &lt;/div&gt;
+  {% set node = item['#object'] %}
+  {% set view_mode = item['#view_mode'] ?? '' %}
+  
+  {% if node.bundle == 'video_ads' and view_mode == 'full' %}
+    {% if media.field_media_video_file is defined %}
+      {% set file = media.field_media_video_file.entity %}
+      {% set description = file.description.value %}
     {% endif %}
-  &lt;/div&gt;
+
+    &lt;div class="video-ad-wrapper"&gt;
+      &lt;div class="video-player"&gt;
+        {{ item.content }}
+      &lt;/div&gt;
+
+      {% if description %}
+        &lt;div class="video-description"&gt;
+          {{ description }}
+        &lt;/div&gt;
+      {% endif %}
+    &lt;/div&gt;
+  {% else %}
+    {# Default fallback if not in allowed node type/view mode #}
+    {{ item.content }}
+  {% endif %}
 {% endfor %}
 {% endraw %}</code></pre>
 
@@ -60,10 +69,10 @@
   <pre><code>Admin > Configuration > Development > Performance > Clear all caches</code></pre>
 
   <h3>4. Verify It Works</h3>
-  <p>Visit a node of content type <code>video_ads</code> that uses the <code>field_video_upload</code> media field. You should see:</p>
+  <p>Visit a node of content type <code>video_ads</code> in <code>full</code> view mode that uses the <code>field_video_upload</code> media field. You should see:</p>
   <ul>
     <li>The video player</li>
-    <li>The file description (if it was filled in when uploading the file)</li>
+    <li>The file description (if filled in when uploading the file)</li>
   </ul>
 
   <h2>🎨 Optional Styling</h2>
@@ -77,12 +86,11 @@
 
   <h2>🧪 Troubleshooting</h2>
   <ul>
-    <li>Make sure the <strong>file actually has a description</strong> in the media entity.</li>
-    <li>If it still doesn't work, use <code>{{ dump(media) }}</code> in the template to debug what's being passed in.</li>
-    <li>Ensure the theme you're editing is the <strong>active</strong> one.</li>
-    <li>Confirm the file name matches the exact field machine name.</li>
+    <li>Ensure the file actually has a description in the media entity.</li>
+    <li>Use <code>{{ dump(media) }}</code> to debug what's available in the template.</li>
+    <li>Make sure your theme is active and the file name is correct.</li>
+    <li>Ensure the view mode used is exactly <code>full</code> or change it in the template condition.</li>
   </ul>
 
   <h2>✅ Summary</h2>
-  <p>This approach uses a field-level Twig override to render a subfield (<code>description</code>) from a file embedded in a media entity, since the Drupal UI does not expose this subfield in view modes or media display settings.</p>
-
+  <p>This approach uses a field-level Twig override to render a subfield (<code>description</code>) from a file embedded in a media entity. By wrapping the logic in a condition, you ensure it only runs for specific content types and view modes, keeping your output clean and modular.</p>
